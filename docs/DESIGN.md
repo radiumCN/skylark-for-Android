@@ -13,7 +13,8 @@ Skylark 是一个运行在 Android 上的代理客户端，核心目标：
 - **多协议**：借助 sing-box 原生能力，尽可能覆盖全部主流协议（见 §4）。
 - **多订阅格式**：支持 **Clash / Clash.Meta YAML**、sing-box JSON、分享链接（`vmess://`、`vless://`、`ss://`、`trojan://`、`hysteria2://`、`tuic://` …）、Base64 聚合订阅。
 - **全局代理**：`VpnService` + TUN，支持分应用代理与规则分流。
-- **UI**：Jetpack Compose + Material 3，支持深色模式与动态取色。
+- **自动选择（Auto）**：内置 Auto 节点组，基于 sing-box `urltest` 定期测速，自动选用延迟最低的可用节点并在故障时自动切换（auto-failover）。
+- **UI**：Jetpack Compose + Material 3（最新版本），支持深色/浅色模式（**不使用动态取色**，采用固定品牌主题）。
 
 ### 关键技术决策（已确认）
 
@@ -23,6 +24,9 @@ Skylark 是一个运行在 Android 上的代理客户端，核心目标：
 | 内核来源 | 官方 `SagerNet/sing-box` | 通过 CI（gomobile）从官方仓库构建 `libbox.aar` |
 | Clash 转换 | 纯 Kotlin 本地转换 | 离线、隐私、可控，不依赖外部 subconverter 服务 |
 | 协议范围 | 尽可能全 | 以 sing-box 支持的全部 outbound 为目标 |
+| 节点选择 | 手动 + **Auto** | Auto 组用 `urltest` 自动测速择优 + 故障自动切换 |
+| UI 主题 | 固定品牌主题 | Material 3 最新版，**不启用动态取色**，深/浅色 |
+| minSdk | **35（Android 15）** | 仅支持 Android 15 及以上设备 |
 
 ---
 
@@ -199,7 +203,9 @@ sing-box outbound:
 运行时根据「内置模板 + 用户设置 + 选中节点」动态生成 sing-box `config.json`：
 
 - **inbounds**：`tun`（全局模式，`stack` 可选 gvisor/system/mixed）+ 可选 `mixed`（本地 http/socks，供其他 App 使用）。
-- **outbounds**：转换出的全部节点 + `selector`（手动选）+ `urltest`（自动择优）+ `direct` / `block` / `dns-out`。
+- **outbounds**：转换出的全部节点 + `selector`（手动选）+ **`urltest`（Auto 组：自动测速择优 + 故障自动切换）** + `direct` / `block` / `dns-out`。
+  - Auto 组参数：`url`（探测地址，默认 `https://www.gstatic.com/generate_204`）、`interval`（测速间隔，如 `300s`）、`tolerance`（容差，避免抖动频繁切换）；成员用 `{all}` 展开为全部节点。
+  - Clash 的 `url-test` / `fallback` / `load-balance` 组统一映射为该 Auto（`urltest`）能力。
 - **route**：
   - 规则集（`rule_set`，geosite/geoip，remote 或本地）
   - 分流模式：规则 / 全局 / 直连
@@ -242,7 +248,7 @@ sing-box outbound:
 
 ### DataStore（Preferences）
 
-应用设置：TUN stack、MTU、DNS 策略、路由模式、分应用列表、启动即连、外观（主题/动态取色）、日志级别。
+应用设置：TUN stack、MTU、DNS 策略、路由模式、分应用列表、启动即连、外观（深/浅色主题，无动态取色）、日志级别。
 
 ---
 
@@ -250,15 +256,15 @@ sing-box outbound:
 
 | 页面 | 内容 |
 |---|---|
-| 首页 / 连接 | 连接/断开大按钮、当前节点、实时上下行速率、连接时长、模式切换 |
+| 首页 / 连接 | 连接/断开大按钮、当前节点（含 **Auto** 自动选择）、实时上下行速率、连接时长、模式切换 |
 | 配置组 | 订阅列表、添加/更新订阅、导入（剪贴板/二维码/文件）、自动更新 |
-| 节点列表 | 分组展示、批量测速、手动选择、按延迟排序、搜索/过滤 |
+| 节点列表 | 分组展示、**Auto 自动组**、批量测速、手动选择、按延迟排序、搜索/过滤 |
 | 路由 / 分流 | 模式（规则/全局/直连）、规则集管理、分应用代理选择器 |
 | 设置 | 内核参数、DNS、外观、启动即连、关于 |
 | 日志 | 内核实时日志流、级别过滤、复制/清空 |
 
 - 导航：Navigation-Compose。
-- 主题：Material 3 + 动态取色（Android 12+），支持深/浅色。
+- 主题：Material 3（最新版本），固定品牌配色，支持深/浅色切换；**不启用动态取色（Dynamic Color）**，保证跨设备视觉一致。
 - 二维码：ZXing（导入/生成节点）。
 
 ---
@@ -267,7 +273,7 @@ sing-box outbound:
 
 | 领域 | 选型 |
 |---|---|
-| 语言 / UI | Kotlin 2.x + Jetpack Compose (BOM) + Material 3 |
+| 语言 / UI | Kotlin 2.x + Jetpack Compose (BOM) + Material 3（`androidx.compose.material3` 最新稳定版） |
 | 架构 | MVVM/MVI + StateFlow + ViewModel |
 | 异步 | Coroutines + Flow |
 | DI | Hilt |
@@ -279,7 +285,7 @@ sing-box outbound:
 | 导航 | Navigation-Compose |
 | 内核 | libbox.aar（sing-box，gomobile 构建） |
 | 构建 | Gradle Kotlin DSL + Version Catalog（libs.versions.toml） |
-| SDK | minSdk 24，targetSdk 最新，NDK abiFilters: arm64-v8a, armeabi-v7a, x86_64 |
+| SDK | **minSdk 35（Android 15）**，targetSdk 最新，NDK abiFilters: arm64-v8a, armeabi-v7a, x86_64 |
 
 ---
 
@@ -329,6 +335,8 @@ app/libs/libbox.aar
 - **Clash 字段覆盖度**：Clash.Meta 扩展字段多，映射需渐进覆盖并对未知字段容错，保留原始配置便于排查。
 - **协议 build tags**：QUIC 类协议（Hysteria2/TUIC）依赖 `with_quic`，构建时勿遗漏对应 tag，否则运行期报未知 outbound。
 - **Android 后台限制**：前台服务通知、电池优化白名单、网络切换重连需专门处理。
+- **minSdk 35（Android 15）**：设备覆盖面显著收窄（仅 Android 15+），可利用较新系统 API（如更完善的 VpnService/权限模型），但需评估目标用户设备是否满足；如后续需扩大覆盖，可再下调 minSdk。
+- **Auto 组抖动**：`urltest` 需合理设置 `interval` 与 `tolerance`，避免节点延迟波动导致频繁切换；建议对切换做去抖并在 UI 展示当前实际选中节点。
 - **许可证**：sing-box 为 **GPLv3**，本项目分发需遵循相应开源义务。
 
 ---
