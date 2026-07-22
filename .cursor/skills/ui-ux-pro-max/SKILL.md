@@ -46,7 +46,7 @@ Extract key information from user request:
 - **Product type**: Entertainment (social, video, music, gaming), Tool (scanner, editor, converter), Productivity (task manager, notes, calendar), or hybrid
 - **Target audience**: C-end consumer users; consider age group, usage context (commute, leisure, work)
 - **Style keywords**: playful, vibrant, minimal, dark mode, content-first, immersive, etc.
-- **Stack**: React Native (this project's only tech stack)
+- **Stack**: Jetpack Compose (this project's tech stack)
 
 ### Step 2: Generate Design System (REQUIRED)
 
@@ -199,7 +199,7 @@ python3 skills/ui-ux-pro-max/scripts/search.py "enterprise tableview density per
 - Product type: Tool (AI search engine)
 - Target audience: C-end users looking for fast, intelligent search
 - Style keywords: modern, minimal, content-first, dark mode
-- Stack: React Native
+- Stack: Jetpack Compose
 
 ### Step 2: Generate Design System (REQUIRED)
 
@@ -222,7 +222,7 @@ python3 skills/ui-ux-pro-max/scripts/search.py "search loading animation" --doma
 ### Step 4: Stack Guidelines
 
 ```bash
-python3 skills/ui-ux-pro-max/scripts/search.py "list performance navigation" --stack react-native
+python3 skills/ui-ux-pro-max/scripts/search.py "list performance navigation" --stack jetpack-compose
 ```
 
 **Then:** Synthesize design system + detailed searches and implement the design.
